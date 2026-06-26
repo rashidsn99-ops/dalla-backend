@@ -1,0 +1,66 @@
+services:
+  - type: web
+    name: dalla-backend
+    runtime: node
+    plan: standard
+    region: frankfurt        # أقرب Region لعُمان على Render (300ms→80ms)
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start   # يستخدم PM2 cluster mode
+    healthCheckPath: /health
+
+    # Autoscaling (متوفر في Standard+)
+    scaling:
+      minInstances: 1
+      maxInstances: 3         # زد إلى 5 عند الإطلاق الكبير
+      targetMemoryPercent: 80 # اصنع نسخة جديدة عند 80% RAM
+      targetCPUPercent: 70    # اصنع نسخة جديدة عند 70% CPU
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dalla-db
+          property: connectionString
+
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: JWT_EXPIRES_IN
+        value: 30d
+
+      # Connection Pool Settings — ضبطها مع كبر حجم DB
+      - key: DB_MAX_CONNECTIONS
+        value: "20"
+
+      - key: DB_MIN_CONNECTIONS
+        value: "2"
+
+      - key: DB_IDLE_TIMEOUT_MS
+        value: "30000"
+
+      - key: SLOW_QUERY_MS
+        value: "200"
+
+      # OTP
+      - key: OTP_TTL_SECONDS
+        value: "60"
+
+      - key: OTP_MAX_ATTEMPTS
+        value: "3"
+
+      - key: ALLOWED_ORIGINS
+        value: "*"
+
+      # Node.js memory optimization
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=1536"
+
+databases:
+  - name: dalla-db
+    plan: standard
+    region: frankfurt        # نفس region السيرفر — zero latency بينهما
+    databaseName: dalla
+    user: dalla
