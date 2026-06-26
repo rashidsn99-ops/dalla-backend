@@ -844,6 +844,7 @@ function setLang(l){
   document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
 }
 const useLang = () => { const v = makeHook(_langStore)(); return v.lang; };
+function useT(){ const lang=useLang(); return (key,...args)=>{ const dict=I18N[lang]||I18N.ar; const entry=dict[key]??I18N.ar[key]??key; return typeof entry==='function'?entry(...args):entry; }; }
 function t(key, ...args){
   const lang = getLang();
   const dict = I18N[lang] || I18N.ar;
