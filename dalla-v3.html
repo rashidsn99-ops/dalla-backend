@@ -1897,7 +1897,7 @@ function CustomerApp(){
   const t=useT();
   const cafes=useCafes();
   const allOrders=useOrders();
-  const allSubs=useAllSubs();
+  const allSubsRaw=useAllSubs();const allSubs=Array.isArray(allSubsRaw)?allSubsRaw:Object.values(allSubsRaw).flat();
   const[tab,setTab]=useState("home");
   const[selCafe,setSelCafe]=useState(null);
   const[selPkg,setSelPkg]=useState(null);
@@ -2441,7 +2441,7 @@ function ManagerApp(){
   const cafes=useCafes();
   const cafe=cafes.find(c=>c.id===staffCafeId)||cafes[0];
   const allOrders=useOrders();
-  const allSubs=useAllSubs();
+  const allSubsRaw=useAllSubs();const allSubs=Array.isArray(allSubsRaw)?allSubsRaw:Object.values(allSubsRaw).flat();
   const subscribers=useSubscribers();
   const complaints=useComplaints();
   const[tab,setTab]=useState("overview");
@@ -2662,7 +2662,7 @@ function AdminApp(){
   const cafes=useCafes();
   const offers=useOffers();
   const allCodes=useCodes();
-  const allSubs=useAllSubs();
+  const allSubsRaw=useAllSubs();const allSubs=Array.isArray(allSubsRaw)?allSubsRaw:Object.values(allSubsRaw).flat();
   const subscribers=useSubscribers();
   const lang=useLang();
 
