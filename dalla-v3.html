@@ -86,11 +86,7 @@ video{width:100%;height:100%;object-fit:cover;border-radius:12px}
 .btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;border-radius:var(--radius-sm);padding:14px;font-size:14px;width:100%;text-align:center;}
 /* Lucide icons */
 .scr svg{stroke-width:2;}
-</style>
-<style>
-
   @keyframes slideBar{0%{transform:translateX(-100%)}50%{transform:translateX(0%)}100%{transform:translateX(100%)}}
-  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -113,14 +109,11 @@ video{width:100%;height:100%;object-fit:cover;border-radius:12px}
 </form>
 <script>
 'use strict';
-'use strict';
-
-'use strict';
 
 // ══ API LAYER ══════════════════════════════════════════
 // ══════════════════════════════════════════════════════════
 // ← ضع رابط Render هنا بعد النشر
-// مثال: const PRODUCTION_API_URL = "https://dalla-backend-xxxx.onrender.com";
+// مثال: const PRODUCTION_API_URL = "https://dalla-backend-o42o.onrender.com";
 // إذا فعلت هذا وحفظت الملف، كل جهاز سيتصل بنفس السيرفر تلقائياً ✅
 const PRODUCTION_API_URL = "https://dalla-backend-o42o.onrender.com";
 // ══════════════════════════════════════════════════════════
@@ -222,8 +215,6 @@ function makePkgs(avgCup){
 }
 
 let _cafesData=[];
-;
-const cafesLs=[];
 // useCafes - wraps _cafesData array with reactivity, loads from server on first use
 let _cafesStore=makeStore(_cafesData);
 function useCafes(){
@@ -514,6 +505,65 @@ async function useCode(code){
   const all=_codes.get();
   if(all[k])_codes.set({...all,[k]:{...all[k],used:(all[k].used||0)+1}});
   await api("POST","/codes/use",{code:k});
+}
+
+// ══ SUBSCRIPTIONS LOADER ════════════════════════════════
+async function loadSubsFromServer(){
+  await withLock('loadSubsFromServer', async()=>{
+    const r=await api('GET','/subscriptions',null,true);
+    if(r&&Array.isArray(r.subscriptions)){
+      // Convert array to object grouped by username
+      const byUser={};
+      r.subscriptions.forEach(s=>{
+        const key=s.username||s.userId||'me';
+        if(!byUser[key])byUser[key]=[];
+        byUser[key].push({
+          id:s.id, cafeId:s.cafeId, cafeName:s.cafeName||s.cafe_name||'',
+          label:s.packageLabel||s.package_label||'', cups:s.cups||0,
+          totalCups:s.totalCups||s.total_cups||30, status:s.active?'active':'inactive',
+          username:key
+        });
+      });
+      _subs.set(byUser);
+    }
+  });
+}
+
+// ══ ORDERS LOADER ════════════════════════════════════════
+async function loadOrdersFromServer(){
+  await withLock('loadOrdersFromServer', async()=>{
+    const r=await api('GET','/orders',null,true);
+    if(r&&Array.isArray(r.orders)){
+      _orders.set(r.orders.map(o=>({
+        id:o.id, drink:o.drink||'', size:o.size||'',
+        status:o.status||'pending', cafeId:o.cafeId||o.cafe_id,
+        cafeName:o.cafeName||o.cafe_name||'',
+        username:o.username||o.customerPhone||'',
+        customerPhone:o.customerPhone||o.customer_phone||'',
+        createdAt:o.createdAt||o.created_at||new Date().toISOString(),
+        price:o.price||0
+      })));
+    }
+  });
+}
+
+// ══ GIFTS LOADER ══════════════════════════════════════════
+async function loadGiftsFromServer(){
+  await withLock('loadGiftsFromServer', async()=>{
+    const r=await api('GET','/gifts',null,true);
+    if(r&&Array.isArray(r.gifts)){
+      _gifts.set(r.gifts.map(g=>({
+        id:g.id, type:g.type||'cup', status:g.status||'pending',
+        cafeId:g.cafeId||g.cafe_id, cafe:g.cafeName||g.cafe_name||'',
+        pkg:g.packageLabel||g.package_label||'', cups:g.cups||1,
+        drink:g.drink||'', size:g.size||'',
+        fromDisplay:g.fromDisplay||g.from_display||'',
+        anonymous:g.anonymous||false,
+        expiresAt:g.expiresAt||g.expires_at||new Date(Date.now()+5*86400000).toISOString(),
+        createdAt:g.createdAt||g.created_at||new Date().toISOString()
+      })));
+    }
+  });
 }
 
 // ══ OFFERS — API-BACKED ═══════════════════════════════════
