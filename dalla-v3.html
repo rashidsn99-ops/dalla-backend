@@ -3969,4 +3969,10 @@ requestAnimationFrame(()=>{
 
 // ══ PWA: تسجيل الـ Service Worker ═══════════════════════
 if('serviceWorker' in navigator){
-  window.addEve
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
