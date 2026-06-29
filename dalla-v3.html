@@ -358,6 +358,10 @@ async function loadComplaintsFromServer(){
     })));
   }
 }
+function updateComplaintStatus(id,status){
+  const arr=_complaints.get().map(x=>x.id===id?{...x,status}:x);
+  _complaints.set(arr);
+}
 async function addComplaint(c){
   const arr=[{...c,id:cSeq++,createdAt:new Date().toISOString(),status:"open"},..._complaints.get()];
   _complaints.set(arr);
@@ -525,6 +529,7 @@ async function loadSubsFromServer(){
         byUser[key].push({
           id:s.id, cafeId:s.cafeId, cafeName:s.cafeName||s.cafe_name||'',
           label:s.packageLabel||s.package_label||'', cups:s.cups||0,
+          cupsLeft:s.cups||0,
           totalCups:s.totalCups||s.total_cups||30, status:s.active?'active':'inactive',
           username:key
         });
@@ -2317,7 +2322,7 @@ function BaristaApp(){
 
   const advanceOrder=async(order)=>{
     const next=order.status==="pending"?"preparing":order.status==="preparing"?"ready":"completed";
-    updateOrderStatus(order.id,next);
+    updateOrder(order.id,next);
     try{await api("PUT","/orders/"+order.id+"/status",{status:next});}catch(e){}
     showToast(next==="ready"?"الطلب جاهز ✓":next==="completed"?"تم الاستلام ✓":"جارٍ التحضير...");
     if(window.lucide)window.lucide.createIcons();
@@ -3041,8 +3046,8 @@ function AdminApp(){
               if(!newCafe.nameAr||!newCafe.avgCup){alert("أدخل اسم الكوفي وسعر الكوب");return;}
               // تحقق أن كل حساب موظف مكتمل إذا أُدخل
               for(const s of cafeStaff){
-                if(s.name||s.phone||s.pin){
-                  if(!s.phone||!s.pin){alert("حساب "+( s.role==="MANAGER"?"المانيجر":"الباريستا")+" يحتاج رقم هاتف ورمز سري");return;}
+                if(s.name||s.pin){
+                  if(!s.pin){alert("حساب "+(s.role==="MANAGER"?"المانيجر":"الباريستا")+" يحتاج رمز سري");return;}
                 }
               }
               // 1. أضف الكوفي
@@ -3068,7 +3073,7 @@ function AdminApp(){
                   const r=await api("POST","/admin/staff",{
                     phone:autoPhone,
                     name:s.name||("موظف "+s.role),
-                    pin:s.pin,role:s.role,cafeId:slug
+                    pin:s.pin,role:s.role,cafeId:cafeId
                   });
                   if(r&&r.user) results.push({...r.user,pin:s.pin,displayName:s.name});
                   else results.push({name:s.name,role:s.role,error:true});
@@ -3930,10 +3935,10 @@ requestAnimationFrame(()=>{
 // Initialize Lucide icons — debounced to avoid firing on every DOM change
 if(window.lucide){
   window.lucide.createIcons();
-  let _lucideTimer=null;
+  let _lucideFrame=null;
   new MutationObserver(()=>{
-    clearTimeout(_lucideTimer);
-    _lucideTimer=setTimeout(()=>window.lucide.createIcons(),150);
+    if(_lucideFrame)cancelAnimationFrame(_lucideFrame);
+    _lucideFrame=requestAnimationFrame(()=>window.lucide.createIcons());
   }).observe(document.getElementById("root"),{childList:true,subtree:true});
 }
 
