@@ -338,38 +338,46 @@ function useNotifs(){
 }
 const notifList={get:()=>_notifs.get()};
 
-// ══ ICON COMPONENT (renders Lucide SVGs inline — no MutationObserver needed) ══
+// ══ ICON COMPONENT (renders Lucide SVGs inline) ══
 function Icon({name,size=20,color,style}){
   const ref=useRef(null);
-  const iconKey=name&&name.replace?name.replace(/-([a-z])/g,(_,c)=>c.toUpperCase()):"";
-  const Key=iconKey?iconKey[0].toUpperCase()+iconKey.slice(1):"";
   useLayoutEffect(()=>{
     const el=ref.current;
-    if(!el||!window.lucide)return;
-    const iconData=window.lucide[Key];
-    if(!iconData||!Array.isArray(iconData))return;
-    // Support both flat [[tag,attrs],...] and [defaultProps,[tag,attrs],...] formats
-    const nodes=iconData.filter(item=>Array.isArray(item));
-    if(!nodes.length)return;
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
-    svg.setAttribute('width',size);
-    svg.setAttribute('height',size);
-    svg.setAttribute('viewBox','0 0 24 24');
-    svg.setAttribute('fill','none');
-    svg.setAttribute('stroke','currentColor');
-    svg.setAttribute('stroke-width','2');
-    svg.setAttribute('stroke-linecap','round');
-    svg.setAttribute('stroke-linejoin','round');
-    if(color)svg.style.color=color;
-    if(style)Object.assign(svg.style,style);
-    nodes.forEach(([tag,attrs])=>{
-      const child=document.createElementNS('http://www.w3.org/2000/svg',tag);
-      if(attrs&&typeof attrs==='object')Object.entries(attrs).forEach(([k,v])=>child.setAttribute(k,String(v)));
-      svg.appendChild(child);
-    });
-    el.innerHTML='';
-    el.appendChild(svg);
+    if(!el||!name)return;
+    try{
+      // Try lucide createIcons API first (most reliable)
+      el.innerHTML='<i data-lucide="'+name+'"></i>';
+      if(window.lucide&&window.lucide.createIcons){
+        window.lucide.createIcons({attrs:{width:size,height:size}});
+      }
+      const svg=el.querySelector('svg');
+      if(svg){
+        svg.setAttribute('width',size);svg.setAttribute('height',size);
+        if(color)svg.style.color=color;
+        if(style)Object.assign(svg.style,style);
+        return;
+      }
+      // Fallback: parse raw icon data array
+      if(!window.lucide)return;
+      const Key=name.replace(/-([a-z])/g,(_,c)=>c.toUpperCase()).replace(/^./,c=>c.toUpperCase());
+      const iconData=window.lucide[Key];
+      if(!iconData||!Array.isArray(iconData))return;
+      const nodes=iconData.filter(item=>Array.isArray(item)&&typeof item[0]==='string');
+      if(!nodes.length)return;
+      const s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      s.setAttribute('viewBox','0 0 24 24');s.setAttribute('fill','none');
+      s.setAttribute('stroke','currentColor');s.setAttribute('stroke-width','2');
+      s.setAttribute('stroke-linecap','round');s.setAttribute('stroke-linejoin','round');
+      s.setAttribute('width',size);s.setAttribute('height',size);
+      if(color)s.style.color=color;
+      if(style)Object.assign(s.style,style);
+      nodes.forEach(([tag,attrs])=>{
+        const c=document.createElementNS('http://www.w3.org/2000/svg',tag);
+        if(attrs&&typeof attrs==='object')Object.entries(attrs).forEach(([k,v])=>c.setAttribute(k,String(v)));
+        s.appendChild(c);
+      });
+      el.innerHTML='';el.appendChild(s);
+    }catch(e){el.innerHTML='';}
   },[name,size,color]);
   return h('span',{ref,style:{display:'inline-flex',lineHeight:0,flexShrink:0,alignItems:'center'}});
 }
@@ -3959,7 +3967,4 @@ function Root(){
 // Error boundary - shows error instead of blank screen
 window.addEventListener('error',function(e){
   var r=document.getElementById('root');
-  if(r)r.innerHTML='<div style="padding:24px;font-family:Arial;direction:rtl;max-width:430px;margin:0 auto;text-align:center"><div style="font-size:40px;margin-bottom:12px">⚠️</div><p style="font-weight:700;font-size:16px;color:#B85C3A;margin-bottom:8px">خطأ في التطبيق</p><pre style="font-size:11px;color:#666;direction:ltr;word-break:break-all;white-space:pre-wrap;text-align:start;background:#f5f5f5;padding:10px;border-radius:8px">'+(e.message||'?')+'\n'+(e.filename||'')+':'+(e.lineno||'')+'</pre><button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#C2603F;color:white;border:none;border-radius:10px;font-size:13px;cursor:pointer">إعادة المحاولة</button></div>';
-});
-
-ReactDOM.createRoot(document.getElementById('root')).render(h(Root,nu
+  if(r)r.innerHTML='<div style="padding:24px;font-family:Arial;direction:rtl;max-width:430px;margin:0 auto;text-align:center"><div style="font-size:40px;margin-bottom:12px">⚠️</div><p style="font-weight:700;font-size:16px;color:#B85C3A;margin-bottom:8px">خطأ في التطبيق</p><pre style="font-size:11px;color:#666;direction:ltr;word-break:break-all;white-space:pre-wrap;text-align:start;background:#f5f5f5;padding:10px;border-radius:8px">'+(e.message||'?')+'\n'+(e.filename||'')+':'+(e.lineno||'')+'</pre><button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#C2603F;color:white;border:none;border-radius:10px
