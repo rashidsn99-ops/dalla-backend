@@ -1,7 +1,7 @@
 // دلّة ☕ — Service Worker
 // يخزّن الصفحة الأساسية محلياً عشان التطبيق يفتح حتى لو الإنترنت ضعيف،
 // والبيانات الحقيقية (طلبات، اشتراكات...) تظل تُجلب من السيرفر دائماً.
-const CACHE_NAME = "dalla-shell-v1";
+const CACHE_NAME = "dalla-shell-v2";
 const SHELL_FILES = ["/", "/dalla-v3.html", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
